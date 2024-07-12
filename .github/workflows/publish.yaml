@@ -1,0 +1,35 @@
+name: Publish-Container
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: {}
+
+jobs:
+  publishToGHCR:
+    env:
+      IMAGE: ghcr.io/${{ github.repository }}
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      - name: Clone git repo
+        uses: actions/checkout@v4
+      - name: Build app
+        run: chmod 755 script.sh
+      - name: Create builder
+        run: docker buildx create --name mybuilder --use --bootstrap
+      - name: Login to GitHub Container Registry
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+      - name: Build multi-platform image and push to GitHub Container Registry
+        run: docker buildx build --cache-to "type=registry,ref=$IMAGE-cache:latest,mode=max" --cache-from "type=registry,ref=$IMAGE-cache:latest" --platform linux/amd64,linux/arm64 --push -t "$IMAGE:latest"  -t "$IMAGE:run-$GITHUB_RUN_NUMBER" -t "$IMAGE:commit-$GITHUB_SHA" .
+      - name: Cleanup old images
+        uses: dataaxiom/ghcr-cleanup-action@v1
+        with:
+          keep-n-tagged: 2
+          exclude-tags: latest
+          validate: true
+          token: ${{ secrets.GITHUB_TOKEN }}
