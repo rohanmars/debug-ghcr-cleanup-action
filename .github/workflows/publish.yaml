@@ -27,7 +27,7 @@ jobs:
       - name: Build multi-platform image and push to GitHub Container Registry
         run: docker buildx build --cache-to "type=registry,ref=$IMAGE-cache:latest,mode=max" --cache-from "type=registry,ref=$IMAGE-cache:latest" --platform linux/amd64,linux/arm64 --push -t "$IMAGE:latest"  -t "$IMAGE:run-$GITHUB_RUN_NUMBER" -t "$IMAGE:commit-$GITHUB_SHA" .
       - name: Cleanup old images
-        uses: dataaxiom/ghcr-cleanup-action@v1
+        uses: rohanmars/ghcr-cleanup-action@main
         with:
           keep-n-tagged: 2
           exclude-tags: latest
